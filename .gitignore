@@ -1,0 +1,42 @@
+# Ansible logs and debug output
+*.log
+*.retry
+
+# Inventory files (potentially contain sensitive host info)
+inventory/
+hosts
+
+# SSH keys and credentials
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+secrets.yml
+vault_pass.txt
+
+# Temporary files and directories
+*.tmp
+*.bak
+*.swp
+*.swo
+*.~*
+
+# Python virtual environment
+venv/
+.env/
+__pycache__/
+*.pyc
+
+# YAML syntax check files
+*.yaml~
+*.yml~
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Generated files (e.g., temporary playbooks or configs)
+generated/
+
+# VSCode
+.vscode
