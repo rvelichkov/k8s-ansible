@@ -1,0 +1,8 @@
+---
+- name: Test Install Dependencies Role
+  hosts: all
+  become: true
+
+  roles:
+    - ../roles/install_dependencies
+    - ../roles/system_configuration

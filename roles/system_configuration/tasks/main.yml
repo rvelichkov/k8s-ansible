@@ -1,0 +1,79 @@
+---
+- name: Generate default containerd configuration
+  command: containerd config default
+  register: containerd_default_config
+
+- name: Save default containerd configuration to /etc/containerd/config.toml
+  copy:
+    content: "{{ containerd_default_config.stdout }}"
+    dest: /etc/containerd/config.toml
+    mode: '0644'
+
+- name: Set SystemdCgroup to true in containerd config
+  replace:
+    path: /etc/containerd/config.toml
+    regexp: 'SystemdCgroup = false'
+    replace: 'SystemdCgroup = true'
+
+- name: Restart containerd service
+  systemd:
+    name: containerd
+    state: restarted
+
+- name: Enable IPv4 packet forwarding
+  copy:
+    dest: /etc/sysctl.d/k8s.conf
+    content: |
+      net.ipv4.ip_forward = 1
+    mode: '0644'
+
+- name: Disable swap
+  command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+
+- name: Remove swap entries from /etc/fstab
+  replace:
+    path: /etc/fstab
+    regexp: '^.*swap.*$'
+    replace: ''
+
+- name: Load br_netfilter kernel module
+  modprobe:
+    name: br_netfilter
+    state: present
+
+- name: Ensure br_netfilter module is loaded on boot
+  copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      br_netfilter
+    mode: '0644'
+
+- name: Ensure bridged traffic goes through iptables
+  copy:
+    dest: /etc/sysctl.d/k8s.conf
+    content: |
+      net.bridge.bridge-nf-call-iptables = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+    mode: '0644'
+
+- name: Apply sysctl parameters
+  command: sysctl --system
+
+- name: Allow necessary ports for Kubernetes via UFW
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - 22         # SSH 
+    - 6443       # Kubernetes API server
+    - 2379:2380  # etcd server client API
+    - 10250      # Kubelet API
+    - 10251      # kube-scheduler
+    - 10252      # kube-controller-manager
+    - 179        # Calico BGP
+
+- name: Enable UFW
+  ufw:
+    state: enabled

@@ -1,0 +1,5 @@
+all:
+  hosts:
+    test-node:
+      ansible_host: 192.168.150.132
+      ansible_user: master    # e.g., ubuntu
