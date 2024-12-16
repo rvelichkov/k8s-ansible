@@ -1,0 +1,31 @@
+---
+- name: Generate join command on control node
+  hosts: control_nodes
+  become: yes
+  tasks:
+    - name: Generate kubeadm join command
+      command: kubeadm token create --print-join-command
+      register: join_command
+
+    - name: Set join command as a fact for worker nodes
+      set_fact:
+        kubeadm_join_command: "{{ join_command.stdout }}"
+
+- name: Join worker nodes to the cluster
+  hosts: worker_nodes
+  become: yes
+  tasks:
+    - name: Join the worker node to the cluster
+      command: "{{ hostvars[groups['control_nodes'][0]].kubeadm_join_command }}"
+
+- name: Verify the worker nodes joined the cluster
+  hosts: control_nodes
+  become: yes
+  tasks:
+    - name: Check the status of the nodes
+      command: kubectl get nodes
+      register: nodes_status
+
+    - name: Display the current nodes in the cluster
+      debug:
+        var: nodes_status.stdout_lines
